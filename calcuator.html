@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Advanced Calculator — Upgraded</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+    :root{
+      --bg: #0f172a;
+      --card: rgba(30,41,59,0.95);
+      --muted: rgba(241,245,249,0.7);
+      --text: #f1f5f9;
+      --accent1: #8b5cf6;
+      --accent2: #a855f7;
+      --accent3: #c084fc;
+      --glass: rgba(255,255,255,0.03);
+      --success: #10b981;
+      --danger: #ef4444;
+      --button-bg: #334155;
+      --shadow: 0 20px 50px rgba(11,7,30,0.6);
+    }
+
+    [data-theme="light"]{
+      --bg: #f6f9ff;
+      --card: #ffffff;
+      --muted: #334155;
+      --text: #0f172a;
+      --button-bg: #eef2ff;
+      --glass: rgba(15,23,42,0.03);
+      --shadow: 0 10px 30px rgba(2,6,23,0.08);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+
+    body{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(180deg,var(--bg), #071028 120%);
+      color:var(--text);
+      padding:24px;
+    }
+
+    .wrap{
+      max-width:980px;
+      width:100%;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:28px;
+      align-items:start;
+    }
+
+    /* CARD */
+    .card{
+      background:var(--card);
+      border-radius:18px;
+      padding:20px;
+      box-shadow:var(--shadow);
+      border:1px solid rgba(255,255,255,0.03);
+      position:relative;
+    }
+
+    /* Header */
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .title{
+      font-weight:800;
+      font-size:1.25rem;
+      background:linear-gradient(90deg,var(--accent1),var(--accent2));
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .subtitle{color:var(--muted);font-size:0.87rem;}
+
+    .controls{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .btn-icon{
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.03);
+      color:var(--text);
+      padding:8px;
+      border-radius:10px;
+      cursor:pointer;
+      display:inline-grid;
+      place-items:center;
+      min-width:40px;
+      min-height:40px;
+    }
+    .btn-icon:active{transform:translateY(1px);}
+
+    /* display */
+    .display-area{
+      margin-top:12px;
+      margin-bottom:16px;
+    }
+    .display-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .history-mini{ color:var(--muted); font-size:0.85rem; min-height:18px; text-align:right; word-break:break-all; }
+    .memory-indicator{ width:10px;height:10px;border-radius:50%; background:var(--success); opacity:0; transition:0.18s; }
+    .memory-indicator.active{opacity:1}
+
+    .main-display{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));
+      border-radius:12px;
+      padding:18px;
+      font-size:2rem;
+      text-align:right;
+      font-weight:600;
+      min-height:62px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      word-break:break-all;
+    }
+    .main-display.error{ color:var(--danger); font-size:1.1rem; }
+
+    /* mode toggle */
+    .mode-toggle{ display:flex; gap:8px; margin-bottom:12px; }
+    .mode-toggle button{
+      flex:1;padding:8px;border-radius:12px;border:none;background:var(--glass);color:var(--muted);cursor:pointer;font-weight:600;
+    }
+    .mode-toggle button.active{ background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:white; box-shadow:0 6px 20px rgba(139,92,246,0.15); }
+
+    /* grid */
+    .grid{
+      display:grid;
+      gap:10px;
+      grid-template-columns: repeat(5,1fr);
+      align-items:stretch;
+    }
+    .grid.basic{ grid-template-columns: repeat(4,1fr); }
+    button.key{
+      height:64px;border-radius:12px;border:none;background:var(--button-bg);color:var(--text);font-weight:700;font-size:1rem;cursor:pointer;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.12);
+    }
+    button.key:active{ transform:translateY(1px); }
+    .key.number{ background: linear-gradient(135deg,#475569,#64748b); color:white; }
+    .key.operator{ background: linear-gradient(135deg,#f59e0b,#d97706); color:white; font-size:1.15rem; }
+    .key.function{ background: linear-gradient(135deg,var(--accent1),var(--accent2)); color:white; font-weight:700; }
+    .key.clear{ background: linear-gradient(135deg,var(--danger),#b91c1c); color:white; }
+    .key.equals{ background: linear-gradient(135deg,var(--success),#059669); color:white; font-size:1.1rem; }
+    .key.wide{ grid-column: span 2; }
+
+    /* right column — programmer / conversions / history */
+    .side{
+      display:flex;flex-direction:column;gap:12px;
+    }
+
+    .panel {
+      padding:12px;border-radius:12px;background:var(--card);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .panel h4{ margin-bottom:8px; color:var(--accent1); font-weight:700; }
+    .conv-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .conv-item{ background:var(--glass); padding:10px;border-radius:10px; font-weight:700; display:flex; justify-content:space-between; align-items:center; color:var(--muted); }
+    .conv-value{ font-size:0.95rem; color:var(--text); word-break:break-all; }
+
+    /* history list */
+    .history-list{ max-height:280px; overflow:auto; display:flex; flex-direction:column; gap:8px; padding-right:6px; }
+    .history-row{ display:flex; justify-content:space-between; gap:8px; align-items:center; background:var(--glass); padding:8px;border-radius:10px; cursor:pointer; }
+    .his-expr{ color:var(--muted); font-size:0.85rem; }
+    .his-res{ font-weight:700; color:var(--text); }
+
+    /* footer row of tools */
+    .tools{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+
+    .small-btn{ padding:8px 10px; border-radius:10px; background:var(--glass); border:none; color:var(--muted); cursor:pointer; font-weight:700; }
+
+    /* responsive */
+    @media (max-width:980px){
+      .wrap{ grid-template-columns: 1fr; }
+      .side{ order: 2; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap" id="app" data-theme="dark">
+    <!-- MAIN left -->
+    <div class="card" aria-label="Calculator main">
+      <div class="topbar">
+        <div>
+          <div class="title">Advanced Calculator</div>
+          <div class="subtitle">Scientific · Programming · History</div>
+        </div>
+
+        <div class="controls">
+          <div id="degToggle" class="btn-icon" title="Degrees / Radians (D)"><span id="degLabel">DEG</span></div>
+          <div id="themeToggle" class="btn-icon" title="Toggle theme">🌓</div>
+          <div id="copyBtn" class="btn-icon" title="Copy result">📋</div>
+        </div>
+      </div>
+
+      <div class="display-area">
+        <div class="display-top">
+          <div class="memory-indicator" id="memLed" title="Memory indicator"></div>
+          <div class="history-mini" id="miniHistory" aria-live="polite"></div>
+        </div>
+        <div class="main-display" id="display" role="status" aria-live="polite">0</div>
+      </div>
+
+      <div class="mode-toggle" role="tablist" aria-label="Calculator modes">
+        <button class="active" data-mode="basic" role="tab">Basic</button>
+        <button data-mode="scientific" role="tab">Scientific</button>
+        <button data-mode="programming" role="tab">Programming</button>
+      </div>
+
+      <div id="layoutContainer">
+        <!-- button grid injected here -->
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:space-between; align-items:center;">
+        <div style="display:flex; gap:8px;">
+          <button class="small-btn" id="mc">MC</button>
+          <button class="small-btn" id="mr">MR</button>
+          <button class="small-btn" id="mplus">M+</button>
+          <button class="small-btn" id="mminus">M-</button>
+          <button class="small-btn" id="ms">MS</button>
+        </div>
+
+        <div>
+          <button class="small-btn" id="downloadHistory">Export History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT side -->
+    <div class="side">
+      <div class="panel">
+        <h4>Programmer Panel</h4>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <button class="small-btn" data-bit="AND">AND</button>
+          <button class="small-btn" data-bit="OR">OR</button>
+          <button class="small-btn" data-bit="XOR">XOR</button>
+          <button class="small-btn" data-bit="NOT">NOT</button>
+          <button class="small-btn" data-bit="SHL"><<</button>
+          <button class="small-btn" data-bit="SHR">>></button>
+          <button class="small-btn" id="parenOpen">(</button>
+          <button class="small-btn" id="parenClose">)</button>
+        </div>
+
+        <div class="conv-grid" aria-hidden="false">
+          <div class="conv-item">BIN <div class="conv-value" id="binVal">0</div></div>
+          <div class="conv-item">HEX <div class="conv-value" id="hexVal">0</div></div>
+          <div class="conv-item">OCT <div class="conv-value" id="octVal">0</div></div>
+          <div class="conv-item">DEC <div class="conv-value" id="decVal">0</div></div>
+        </div>
+        <div style="margin-top:10px;color:var(--muted);font-size:0.9rem;">Binary/oct/hex update automatically when a numeric result appears.</div>
+      </div>
+
+      <div class="panel">
+        <h4>History</h4>
+        <div class="history-list" id="historyList" aria-live="polite">
+          <div style="color:var(--muted)">No calculations yet</div>
+        </div>
+
+        <div class="tools">
+          <button class="small-btn" id="clearHistory">Clear History</button>
+          <button class="small-btn" id="pasteResult">Paste Last Result</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Tips</h4>
+        <div style="color:var(--muted); font-size:0.9rem;">
+          • Use parentheses for complex expressions. <br>
+          • Keyboard shortcuts: numbers, + - * / % ^ (exponent), Enter = evaluate, Backspace = erase, ESC = clear. <br>
+          • Press D to toggle degrees/radians, M keys to control memory. <br>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  Upgraded Advanced Calculator JS
+  - Expression translator (UI tokens -> JS)
+  - Modes: basic, scientific, programming
+  - Degree/radian toggles for trig
+  - Memory functions
+  - Programmer conversions and bitwise ops
+  - History, export, copy
+*/
+
+(function(){
+  // DOM
+  const app = document.getElementById('app');
+  const displayEl = document.getElementById('display');
+  const miniHistory = document.getElementById('miniHistory');
+  const memLed = document.getElementById('memLed');
+  const historyList = document.getElementById('historyList');
+  const binVal = document.getElementById('binVal');
+  const hexVal = document.getElementById('hexVal');
+  const octVal = document.getElementById('octVal');
+  const decVal = document.getElementById('decVal');
+
+  // state
+  let state = {
+    input: '0',
+    prev: '',
+    op: null,
+    waiting: false,
+    mode: 'basic',
+    memory: 0,
+    history: JSON.parse(localStorage.getItem('calc_history_v2') || '[]'),
+    deg: localStorage.getItem('calc_deg_mode') === 'true' ? true : false,
+    theme: localStorage.getItem('calc_theme') || 'dark'
+  };
+
+  // apply theme
+  app.setAttribute('data-theme', state.theme === 'light' ? 'light' : 'dark');
+
+  // templates
+  const templates = {
+    basic: [
+      {label:'AC', cls:'key clear', action:'clear'},
+      {label:'CE', cls:'key clear', action:'clearEntry'},
+      {label:'(', cls:'key function', action:'paren', value:'('},
+      {label:')', cls:'key function', action:'paren', value:')'},
+      {label:'7', cls:'key number', action:'number', value:'7'},
+      {label:'8', cls:'key number', action:'number', value:'8'},
+      {label:'9', cls:'key number', action:'number', value:'9'},
+      {label:'÷', cls:'key operator', action:'operator', value:'/'},
+      {label:'4', cls:'key number', action:'number', value:'4'},
+      {label:'5', cls:'key number', action:'number', value:'5'},
+      {label:'6', cls:'key number', action:'number', value:'6'},
+      {label:'×', cls:'key operator', action:'operator', value:'*'},
+      {label:'1', cls:'key number', action:'number', value:'1'},
+      {label:'2', cls:'key number', action:'number', value:'2'},
+      {label:'3', cls:'key number', action:'number', value:'3'},
+      {label:'−', cls:'key operator', action:'operator', value:'-'},
+      {label:'0', cls:'key number wide', action:'number', value:'0'},
+      {label:'.', cls:'key function', action:'decimal'},
+      {label:'=', cls:'key equals', action:'equals'},
+      {label:'+', cls:'key operator', action:'operator', value:'+'}
+    ],
+    scientific: [
+      {label:'√', cls:'key function', action:'function', value:'sqrt'},
+      {label:'x²', cls:'key function', action:'function', value:'square'},
+      {label:'x³', cls:'key function', action:'function', value:'cube'},
+      {label:'n!', cls:'key function', action:'function', value:'factorial'},
+      {label:'π', cls:'key function', action:'constant', value:'PI'},
+      {label:'sin', cls:'key function', action:'function', value:'sin'},
+      {label:'cos', cls:'key function', action:'function', value:'cos'},
+      {label:'tan', cls:'key function', action:'function', value:'tan'},
+      {label:'log', cls:'key function', action:'function', value:'log'},
+      {label:'ln', cls:'key function', action:'function', value:'ln'},
+      {label:'exp', cls:'key function', action:'function', value:'exp'}
+    ],
+    programming: [
+      {label:'abs', cls:'key function', action:'function', value:'abs'},
+      {label:'1/x', cls:'key function', action:'function', value:'inverse'},
+      {label:'±', cls:'key function', action:'function', value:'negate'},
+      {label:'%', cls:'key operator', action:'operator', value:'%'},
+      {label:'^', cls:'key operator', action:'operator', value:'^'},
+      {label:'e', cls:'key function', action:'constant', value:'E'},
+      {label:'φ', cls:'key function', action:'constant', value:'PHI'}
+    ]
+  };
+
+  // constants
+  const constants = { PI: Math.PI, E: Math.E, PHI: (1 + Math.sqrt(5))/2 };
+
+  // helpers
+  function renderLayout(mode){
+    const container = document.getElementById('layoutContainer');
+    container.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'grid ' + (mode === 'basic' ? 'basic' : 'scientific');
+    // order: if scientific, prepend scientific template; if programming, prepend programming
+    let list = [];
+    if(mode === 'scientific') list = [...templates.scientific, ...templates.basic];
+    else if(mode === 'programming') list = [...templates.programming, ...templates.basic];
+    else list = [...templates.basic];
+
+    list.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = item.cls || 'key';
+      btn.textContent = item.label;
+      btn.setAttribute('data-action', item.action || '');
+      if(item.value) btn.setAttribute('data-value', item.value);
+      btn.setAttribute('aria-label', item.label);
+      btn.addEventListener('click', ()=> handleClick(btn));
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+  }
+
+  function setDisplay(v, err=false){
+    displayEl.textContent = String(v);
+    if(err) displayEl.classList.add('error'); else displayEl.classList.remove('error');
+    updateConversionsIfNumber(v);
+  }
+
+  function updateMiniHistory(s){
+    miniHistory.textContent = s || '';
+  }
+
+  function pushHistory(expr, result){
+    const entry = { expr, result: (typeof result === 'number' ? fmtNumber(result) : result), time: new Date().toLocaleString() };
+    state.history.unshift(entry);
+    if(state.history.length>100) state.history.pop();
+    localStorage.setItem('calc_history_v2', JSON.stringify(state.history));
+    renderHistory();
+  }
+
+  function renderHistory(){
+    if(!state.history || state.history.length === 0){
+      historyList.innerHTML = '<div style="color:var(--muted)">No calculations yet</div>';
+      return;
+    }
+    historyList.innerHTML = '';
+    state.history.forEach((h, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      row.innerHTML = `<div style="min-width:0"><div class="his-expr">${escapeHtml(h.expr)}</div><div class="his-res">${escapeHtml(String(h.result))}</div></div><div style="color:var(--muted);font-size:0.8rem">${h.time}</div>`;
+      row.addEventListener('click', ()=>{
+        setDisplay(h.result);
+        state.input = String(h.result);
+      });
+      historyList.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function fmtNumber(n){
+    if(typeof n !== 'number') return n;
+    if(!isFinite(n)) return String(n);
+    if(Math.abs(n) >= 1e10 || (Math.abs(n) !== 0 && Math.abs(n) < 1e-6)) return Number(n).toExponential(6);
+    return Number(Math.round(n * 1e12) / 1e12);
+  }
+
+  // evaluate expression - translator approach
+  function evaluateExpression(expr){
+    // replace UI tokens with JS equivalents
+    // safe-ish cleanup: allow only digits, operators, parentheses, decimal, whitespace, and known names
+    try {
+      let t = String(expr);
+
+      // replace visible tokens
+      t = t.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+
+      // replace ^ with exponent (**)
+      // but preserve ^ when used for bitwise in programming mode — we treat ^ as exponent in this expr (programming mode uses explicit bitwise buttons)
+      t = t.replace(/\^/g, '**');
+
+      // functions mapping: sqrt(x) -> Math.sqrt(x), sin/cos/tan -> Math.sin etc (respect deg/rad)
+      t = t.replace(/\bsqrt\s*\(/gi, 'Math.sqrt(');
+      t = t.replace(/\bexp\s*\(/gi, 'Math.exp(');
+      t = t.replace(/\bln\s*\(/gi, 'Math.log(');
+      t = t.replace(/\blog\s*\(/gi, 'Math.log10(');
+
+      // trig: if degree mode, wrap input -> convert degrees to radians by multiplying by PI/180
+      if(state.deg){
+        t = t.replace(/\bsin\s*\(/gi, 'Math.sin(((');
+        t = t.replace(/\bcos\s*\(/gi, 'Math.cos(((');
+        t = t.replace(/\btan\s*\(/gi, 'Math.tan(((');
+        // after opening, we'll later append )*(Math.PI/180)) to each converted trig, so implement a fix below
+        // Instead, simpler approach: replace trig occurrences with (Math.sin((arg)*Math.PI/180))
+      }
+
+      // more robust trig replacement handling (build with regex)
+      t = t.replace(/\bsin\s*\(([^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi, (m, g1)=>{
+        const inner = g1;
+        return state.deg ? `Math.sin((${inner})*(${Math.PI}/180))` : `Math.sin((${inner}))`;
+      });
+      t = t.replace(/\bcos\s*\(([^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi, (m, g1)=>{
+        const inner = g1;
+        return state.deg ? `Math.cos((${inner})*(${Math.PI}/180))` : `Math.cos((${inner}))`;
+      });
+      t = t.replace(/\btan\s*\(([^()]+|\((?:[^()]+|\([^()]*\))*\))*\)/gi, (m, g1)=>{
+        const inner = g1;
+        return state.deg ? `Math.tan((${inner})*(${Math.PI}/180))` : `Math.tan((${inner}))`;
+      });
+
+      // factorial: replace n! by factorial(n) using regex (simple approach: number!)
+      // We'll implement factorial function in the evaluator scope
+      t = t.replace(/(\d+)!/g, 'fact($1)');
+
+      // constants
+      t = t.replace(/\bπ\b/gi, String(Math.PI));
+      t = t.replace(/\bPI\b/g, String(Math.PI));
+      t = t.replace(/\be\b/g, String(Math.E)); // careful: 'e' may appear in scientific notation; but we didn't allow letters otherwise
+
+      // safe whitelist — allow digits, ., parentheses, math operators and letters for 'fact' and Math.* calls we inserted
+      // For safety we will not use eval directly on arbitrary user code — but use Function with limited scope and helper functions
+      const fnBody = `
+        const fact = (n)=>{ n = Number(n); if(!Number.isFinite(n) || n<0 || Math.floor(n)!==n) throw 'Invalid factorial'; if(n>170) throw 'Too large'; let r=1; for(let i=2;i<=n;i++) r*=i; return r; };
+        const MathLog10 = Math.log10 || ((x)=>Math.log(x)/Math.LN10);
+        Math.log10 = Math.log10 || MathLog10;
+        return (${t});
+      `;
+
+      // create function
+      const f = new Function(fnBody);
+      const val = f();
+      if(typeof val === 'number' && !isFinite(val)) throw new Error('Math Error');
+      return Number(val);
+    } catch (err){
+      throw err;
+    }
+  }
+
+  // UI handlers
+  function handleClick(btn){
+    const action = btn.getAttribute('data-action');
+    const val = btn.getAttribute('data-value');
+
+    switch(action){
+      case 'number': handleNumber(val); break;
+      case 'operator': handleOperator(val); break;
+      case 'decimal': handleDecimal(); break;
+      case 'equals': handleEquals(); break;
+      case 'clear': handleClear(); break;
+      case 'clearEntry': handleClearEntry(); break;
+      case 'function': handleFunction(val); break;
+      case 'constant': handleConstant(val); break;
+      case 'paren': handleParen(val); break;
+      default: break;
+    }
+  }
+
+  function handleNumber(n){
+    if(state.waiting){
+      state.input = n;
+      state.waiting = false;
+    } else {
+      state.input = (state.input === '0') ? n : state.input + n;
+    }
+    setDisplay(state.input);
+  }
+
+  function handleOperator(op){
+    // append operator to expression
+    // if last char is operator, replace
+    if(state.waiting){
+      // chaining: change last operator
+      state.input = state.input.slice(0, -1) + op;
+      state.waiting = false;
+    } else {
+      if(/[+\-*/%()]$/.test(state.input) === false) {
+        state.input = state.input + op;
+      } else {
+        // replace trailing operator
+        state.input = state.input.replace(/[+\-*/%]+$/,'') + op;
+      }
+    }
+    setDisplay(state.input);
+  }
+
+  function handleDecimal(){
+    if(state.waiting){
+      state.input = '0.';
+      state.waiting = false;
+    } else {
+      // prevent multiple decimals in the current number segment
+      const parts = state.input.split(/[\+\-\*\/\%\^\(\)]/);
+      const last = parts[parts.length-1];
+      if(last.indexOf('.') === -1) state.input += '.';
+    }
+    setDisplay(state.input);
+  }
+
+  function handleParen(p){
+    state.input += p;
+    setDisplay(state.input);
+  }
+
+  function handleClear(){
+    state.input = '0';
+    state.waiting = false;
+    setDisplay(state.input);
+    updateMiniHistory('');
+  }
+
+  function handleClearEntry(){
+    // remove last char
+    if(state.input.length <= 1) state.input = '0';
+    else state.input = state.input.slice(0, -1);
+    setDisplay(state.input);
+  }
+
+  function handleEquals(){
+    try {
+      const expr = state.input;
+      const value = evaluateExpression(expr);
+      const f = fmtNumber(Number(value));
+      setDisplay(f);
+      updateMiniHistory(expr + ' =');
+      pushHistory(expr, f);
+      state.waiting = true;
+      state.input = String(f);
+      updateProgrammerConversions(Number(f));
+    } catch (err){
+      setDisplay(String(err), true);
+      updateMiniHistory('Error');
+    }
+  }
+
+  function handleFunction(fn){
+    const current = state.input;
+    // if function was clicked, we prefer to wrap current value when waiting OR insert function with parentheses
+    if(fn === 'factorial'){
+      // use evaluateExpression on current or treat directly if numeric
+      try {
+        const v = evaluateExpression(current);
+        if(!Number.isInteger(v) || v<0) throw 'Invalid input';
+        // compute factorial
+        let r = 1;
+        for(let i=2;i<=v;i++) r *= i;
+        const f = fmtNumber(r);
+        setDisplay(f);
+        pushHistory(`${fn}(${v})`, f);
+        state.input = String(f);
+        state.waiting = true;
+        updateProgrammerConversions(Number(f));
+      } catch(e){ setDisplay(String(e), true); }
+      return;
+    }
+
+    // other unary functions: sqrt, square, cube, sin, cos, tan, ln, log, exp, abs, inverse, negate
+    try {
+      let targetExpr = current;
+      // if current looks like an expression and not waiting for new input, evaluate wrap
+      let arg = evaluateExpression(targetExpr);
+      let result;
+      switch(fn){
+        case 'sqrt': if(arg<0) throw 'Invalid input'; result = Math.sqrt(arg); break;
+        case 'square': result = arg*arg; break;
+        case 'cube': result = arg*arg*arg; break;
+        case 'sin': result = state.deg ? Math.sin(arg*Math.PI/180) : Math.sin(arg); break;
+        case 'cos': result = state.deg ? Math.cos(arg*Math.PI/180) : Math.cos(arg); break;
+        case 'tan': result = state.deg ? Math.tan(arg*Math.PI/180) : Math.tan(arg); break;
+        case 'ln': if(arg<=0) throw 'Invalid input'; result = Math.log(arg); break;
+        case 'log': if(arg<=0) throw 'Invalid input'; result = Math.log10 ? Math.log10(arg) : Math.log(arg)/Math.LN10; break;
+        case 'exp': result = Math.exp(arg); break;
+        case 'abs': result = Math.abs(arg); break;
+        case 'inverse': if(arg===0) throw 'Division by zero'; result = 1/arg; break;
+        case 'negate': result = -arg; break;
+        default: return;
+      }
+      const f = fmtNumber(result);
+      setDisplay(f);
+      pushHistory(`${fn}(${arg})`, f);
+      state.input = String(f);
+      state.waiting = true;
+      updateProgrammerConversions(Number(f));
+    } catch(e){
+      setDisplay(String(e), true);
+    }
+  }
+
+  function handleConstant(c){
+    if(constants[c] !== undefined){
+      state.input = String(constants[c]);
+      setDisplay(state.input);
+      state.waiting = true;
+    }
+  }
+
+  // memory functions UI
+  document.getElementById('mc').addEventListener('click', ()=>{
+    state.memory = 0; updateMemUI();
+  });
+  document.getElementById('mr').addEventListener('click', ()=>{
+    state.input = String(state.memory); setDisplay(state.input); state.waiting = true;
+  });
+  document.getElementById('mplus').addEventListener('click', ()=>{
+    const v = Number(evaluateOrZero(state.input)); state.memory += v; updateMemUI();
+  });
+  document.getElementById('mminus').addEventListener('click', ()=>{
+    const v = Number(evaluateOrZero(state.input)); state.memory -= v; updateMemUI();
+  });
+  document.getElementById('ms').addEventListener('click', ()=>{
+    state.memory = Number(evaluateOrZero(state.input)); updateMemUI();
+  });
+
+  function updateMemUI(){
+    if(state.memory !== 0) memLed.classList.add('active'); else memLed.classList.remove('active');
+  }
+
+  function evaluateOrZero(s){
+    try{ return evaluateExpression(s); } catch(e){ return 0; }
+  }
+
+  // copy / theme / deg toggle
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    const txt = displayEl.textContent;
+    navigator.clipboard?.writeText(txt).then(()=> {
+      const old = displayEl.textContent;
+      displayEl.textContent = 'Copied ✔';
+      setTimeout(()=> displayEl.textContent = old, 900);
+    }, ()=> {
+      alert('Copy failed');
+    });
+  });
+
+  document.getElementById('degToggle').addEventListener('click', ()=>{
+    state.deg = !state.deg;
+    localStorage.setItem('calc_deg_mode', state.deg ? 'true' : 'false');
+    updateDegLabel();
+  });
+
+  function updateDegLabel(){ document.getElementById('degLabel').textContent = state.deg ? 'DEG' : 'RAD'; }
+  updateDegLabel();
+
+  document.getElementById('themeToggle').addEventListener('click', ()=>{
+    state.theme = state.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('calc_theme', state.theme);
+    app.setAttribute('data-theme', state.theme === 'light' ? 'light' : 'dark');
+  });
+
+  // history controls
+  document.getElementById('clearHistory').addEventListener('click', ()=>{
+    if(!confirm('Clear all history?')) return;
+    state.history = []; localStorage.removeItem('calc_history_v2'); renderHistory();
+  });
+
+  document.getElementById('downloadHistory').addEventListener('click', ()=>{
+    const data = JSON.stringify(state.history, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'calc_history.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('pasteResult').addEventListener('click', ()=>{
+    if(state.history.length>0){
+      const last = state.history[0].result;
+      state.input = String(last);
+      setDisplay(state.input);
+    }
+  });
+
+  document.getElementById('parenOpen').addEventListener('click', ()=>{ handleParen('('); });
+  document.getElementById('parenClose').addEventListener('click', ()=>{ handleParen(')'); });
+
+  // programmer bitwise buttons
+  document.querySelectorAll('[data-bit]').forEach(b => {
+    b.addEventListener('click', ()=>{
+      const bit = b.getAttribute('data-bit');
+      doBitwise(bit);
+    });
+  });
+
+  function doBitwise(op){
+    try{
+      const value = Number(evaluateExpression(state.input));
+      if(!Number.isFinite(value) || !Number.isInteger(value)) throw 'Integer required';
+      let res;
+      switch(op){
+        case 'AND': res = value & state.memory; break;
+        case 'OR': res = value | state.memory; break;
+        case 'XOR': res = value ^ state.memory; break;
+        case 'NOT': res = ~value; break;
+        case 'SHL': res = value << 1; break;
+        case 'SHR': res = value >> 1; break;
+        default: return;
+      }
+      setDisplay(fmtNumber(res));
+      pushHistory(`${op}(${value})`, fmtNumber(res));
+      state.input = String(res);
+      updateProgrammerConversions(Number(res));
+      state.waiting = true;
+    }catch(e){ setDisplay(String(e), true); }
+  }
+
+  // conversions
+  function updateProgrammerConversions(n){
+    if(typeof n !== 'number' || !isFinite(n)) {
+      binVal.textContent = hexVal.textContent = octVal.textContent = decVal.textContent = '—';
+      return;
+    }
+    const intN = Math.trunc(n);
+    binVal.textContent = (intN >>> 0).toString(2);
+    hexVal.textContent = (intN >>> 0).toString(16).toUpperCase();
+    octVal.textContent = (intN >>> 0).toString(8);
+    decVal.textContent = String(intN);
+  }
+
+  function updateConversionsIfNumber(v){
+    const num = Number(v);
+    if(!isNaN(num) && isFinite(num)) updateProgrammerConversions(num);
+    else { binVal.textContent = hexVal.textContent = octVal.textContent = decVal.textContent = '—'; }
+  }
+
+  // keyboard handling
+  document.addEventListener('keydown', (e)=>{
+    const k = e.key;
+    if(/^[0-9]$/.test(k)){ handleNumber(k); return; }
+    if(k === '.') { handleDecimal(); return; }
+    if(k === 'Enter' || k === '='){ e.preventDefault(); handleEquals(); return; }
+    if(k === 'Escape'){ handleClear(); return; }
+    if(k === 'Backspace'){ handleClearEntry(); return; }
+    if(k === '(' || k === ')'){ handleParen(k); return; }
+    if(k === '+' || k === '-' || k === '*' || k === '/' || k === '%' ){ handleOperator(k); return; }
+    if(k === '^'){ handleOperator('^'); return; }
+    // letters shortcuts
+    if(k.toLowerCase() === 'd'){ state.deg = !state.deg; localStorage.setItem('calc_deg_mode', state.deg ? 'true':'false'); updateDegLabel(); return; }
+    // memory shortcuts
+    if(k.toLowerCase()==='m'){
+      // simple m behavior: ms store current
+      state.memory = Number(evaluateOrZero(state.input)); updateMemUI();
+      return;
+    }
+    // trig shortcuts (s,c,t,l)
+    if(k.toLowerCase()==='s'){ handleFunction('sin'); return; }
+    if(k.toLowerCase()==='c'){ handleFunction('cos'); return; }
+    if(k.toLowerCase()==='t'){ handleFunction('tan'); return; }
+    if(k.toLowerCase()==='l'){ handleFunction('ln'); return; }
+  });
+
+  // evaluate or zero helper
+  function evaluateOrZero(s){
+    try{ return evaluateExpression(s); }catch(e){ return 0; }
+  }
+
+  // boot
+  renderLayout(state.mode);
+  renderHistory();
+  setDisplay(state.input);
+  updateMemUI();
+  updateProgrammerConversions(0);
+
+  // mode tab clicks
+  document.querySelectorAll('.mode-toggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.mode-toggle button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      state.mode = btn.getAttribute('data-mode');
+      renderLayout(state.mode);
+    });
+  });
+
+  // small helper: update display when window focused (preserve)
+  window.addEventListener('focus', ()=> setDisplay(state.input));
+})();
+</script>
+</body>
+</html>
